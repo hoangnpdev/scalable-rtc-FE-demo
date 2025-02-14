@@ -1,0 +1,44 @@
+.container {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+.header, .footer{
+    background-color: purple;
+    color: white;
+}
+
+
+.nav-bar {
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-item {
+    height: 25px;
+    background-color: cyan;
+    margin: 2px;
+    border: 1px solid cyan;
+}
+
+.side-panel {
+
+}
+
+.side-item {
+    height: 50px;
+    background-color: darkcyan;
+    margin: 2px;
+    border: 1px solid darkcyan;
+}
+
+
+@media screen and (min-width: 600px) {
+    .container {
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr;
+    }
+    .header, .footer {
+        grid-column: 1 / 4;
+    }
+}
