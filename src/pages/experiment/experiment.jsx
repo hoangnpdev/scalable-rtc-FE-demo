@@ -6,20 +6,29 @@ function Experiment() {
     const [msg, setMsg] = useState("");
     let stompRef = useRef(null);
     useEffect(() => {
+        console.log(localStorage.getItem('session'));
         stompRef.current = new Client({
             brokerURL: 'ws://localhost:8080/web-socket',
+            connectHeaders: {
+                'Authorization': `${localStorage.getItem('session')}`,
+            },
             onConnect: () => {
-                stompRef.current.subscribe('/topic/echo', message => {
-                    window.alert(message.body)
+                stompRef.current.subscribe('/topic/global-channel/echo', message => {
+                    window.alert(JSON.stringify(message.body));
                 });
             },
         });
         stompRef.current.activate();
+        return () => {
+            stompRef.current.deactivate().then( () => {
+                console.log('ws disconnected')
+            });
+        }
     }, [])
 
     const send = () => {
         console.log(msg)
-        stompRef.current.publish({destination: "/topic/echo", body: msg})
+        stompRef.current.publish({destination: "/app/global-channel/echo", body: msg})
     }
 
     return (
