@@ -19,19 +19,19 @@ function Login() {
             })
     }
     return (<>
-            <div className={'container'}>
-                <form onSubmit={handleSubmit(data => login(data))}>
-                    <div>
-                        <label>Account name:</label>
-                        <input type={'text'} {...register('accountName', {required: true})} />
+            <div className={'container box'}>
+                <form className={'control'} onSubmit={handleSubmit(data => login(data))}>
+                    <div className={'block'}>
+                        <label className={'label'} >Account name:</label>
+                        <input className={'input'} type={'text'} {...register('accountName', {required: true})} />
                         {errors.accountName && <p className={'text-danger'}>Account name required</p>}
                     </div>
-                    <div>
-                        <label>Account name:</label>
-                        <input type={'text'} {...register('password', {required: true})} />
+                    <div className={'block'}>
+                        <label className={'label'}>Account name:</label>
+                        <input className={'input'} type={'text'} {...register('password', {required: true})} />
                         {errors.password && <p className={'text-danger'}>Password required</p>}
                     </div>
-                    <button type={'submit'}>Login</button>
+                    <button className={'button'} type={'submit'}>Login</button>
                 </form>
             </div>
         </>)

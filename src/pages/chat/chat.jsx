@@ -6,17 +6,29 @@ import {Client} from "@stomp/stompjs";
 const initChatBox = {
     activeChannel: '',
     msgList: [],
-    channelList: []
+    channelList: [],
+    searchResultList: [],
+    postingMsg: '',
+    searchQuery: ''
 }
 
 const chatReducer = (state, action) => {
     switch (action.type) {
         case "SWITCH_CHANNEL":
-            return {...state, activeChannel: action.activeChannel, msgList: [...action.msgList]};
+            return {...state, activeChannel: action.activeChannel, msgList: [...action.msgList], searchResultList: []};
         case "UPDATE_NEW_MESSAGE":
             return {...state, msgList: [...state.msgList, action.newMsg]}
         case "LOAD_CHANNELS":
             return {...state, channelList: action.channelList};
+        case "UPDATE_SEARCH_RESULT":
+            return {...state, searchResultList: action.searchResultList,};
+        case 'POST_NEW_MESSAGE':
+            return {...state, postingMsg: ''};
+        case 'UPDATE_POSTING_MESSAGE':
+            return {...state, postingMsg: action.postingMsg};
+        case 'UPDATE_SEARCH_QUERY':
+            return {...state, searchQuery: action.searchQuery};
+
         default:
             return state;
     }
@@ -33,7 +45,7 @@ function Chat() {
      */
     let stompSubscriptionRef = useRef(null);
 
-    const [postingMsg, setPostingMsg] = useState("");
+
     const [chatBox, dispatch] = useReducer(chatReducer, initChatBox);
 
     useEffect(() => {
@@ -102,49 +114,91 @@ function Chat() {
                         newMsg: JSON.parse(message.body),
                     })
                 })
-
             });
     }
 
     const postMessage = (event) => {
-        if (event.key === 'Enter' && postingMsg !== "") {
+        if (event.key === 'Enter' && chatBox.postingMsg !== "") {
             console.log("sending message...")
             wsRef.current.publish({
                 destination: `/app/global-channel/${chatBox.activeChannel}`,
-                body: postingMsg
+                body: chatBox.postingMsg
             });
-            setPostingMsg("");
+            dispatch({type: 'POST_NEW_MESSAGE'})
+        }
+    }
 
+    const search = (event) => {
+        if (event.key === 'Enter' && chatBox.searchQuery !== "") {
+            fetch(`http://localhost:8080/rtc/global-message/${chatBox.activeChannel}/search`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `${localStorage.getItem('session')}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: chatBox.searchQuery
+                }),
+            }).then(res => res.json())
+                .then(result => {
+                    dispatch({
+                        type: "UPDATE_SEARCH_RESULT",
+                        searchResultList: result
+                    })
+
+                })
         }
     }
 
     return (
         <>
-
             <div className={styles.container}>
-                <div className={styles['channel-list']}>
-                    <ul className={'list-group'}>
-                        {chatBox.channelList.map(
-                            (channel) =>
-                                (<li
-                                    key={channel.channelId}
-                                    onClick={() => switchChannel(channel.channelName)}
-                                    className={`list-group-item mx-2 ${channel.channelName === chatBox.activeChannel ? 'active' : ''}`}>
-                                    {channel.channelName}
-                                </li>)
-                        )}
-                    </ul>
+                <div className={styles['channel-box']}>
+                    <div className={'menu'}>
+                        <ul className={'menu-list'}>
+                            {chatBox.channelList.map(
+                                (channel) =>
+                                    (<li
+                                        key={channel.channelId}
+                                        onClick={() => switchChannel(channel.channelName)}>
+                                        <a className={`${channel.channelName === chatBox.activeChannel ? 'is-active' : ''}`}>
+                                            {channel.channelName}
+                                        </a>
+                                    </li>)
+                            )}
+                        </ul>
+                    </div>
                 </div>
-                <div className={styles['channel-name']}>
-                    {
-                        chatBox.msgList.map(msg => <div key={Math.random()} className={'mx-2 my-2 '}><span
-                            className={'px-2 bg-info'}>{msg.message}</span>
-                        </div>)
-                    }
-                    <input value={postingMsg}
-                           onChange={(e) => setPostingMsg(e.target.value)}
-                           onKeyUp={(event) => postMessage(event)}
+                <div className={styles['message-box']}>
+
+                    <div className={styles['message-content']}>
+                        {
+                            chatBox.msgList.map(msg => <div className={'block'} key={Math.random()}><span
+                                className={'px-2 bg-info'}><strong>{msg.accountName}:</strong> {msg.message}</span>
+                            </div>)
+                        }
+                    </div>
+                    <div className={styles['typing-box']}>
+                        <input className={'input'}
+                               value={chatBox.postingMsg}
+                               onChange={(e) => dispatch({type: 'UPDATE_POSTING_MESSAGE', postingMsg: e.target.value})}
+                               onKeyUp={(event) => postMessage(event)}
+                        />
+                    </div>
+                </div>
+                <div className={styles['search-box']}>
+                    <input className={'input'} placeholder={'search...'}
+                           value={chatBox.searchQuery}
+                           onChange={(e) => dispatch({type: 'UPDATE_SEARCH_QUERY', searchQuery: e.target.value})}
+                           onKeyUp={(event) => search(event)}
                     />
+                    <div className={'menu'}>
+                        <ul className={'menu-list'}>
+                            {chatBox.searchResultList.map(e => (
+                                <li><a>{e.message}</a></li>
+                            ))}
+                        </ul>
+                    </div>
                 </div>
             </div>
         </>
